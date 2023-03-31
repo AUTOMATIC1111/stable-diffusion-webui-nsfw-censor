@@ -3,7 +3,7 @@ from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionS
 from transformers import AutoFeatureExtractor
 from PIL import Image
 
-from modules import scripts, shared
+from modules import scripts, shared, script_callbacks
 
 safety_model_id = "CompVis/stable-diffusion-safety-checker"
 safety_feature_extractor = None
@@ -52,5 +52,15 @@ class NsfwCheckScript(scripts.Script):
         return scripts.AlwaysVisible
 
     def postprocess_batch(self, p, *args, **kwargs):
+        if shared.opts.filter_nsfw is False:
+            return
+
         images = kwargs['images']
         images[:] = censor_batch(images)[:]
+
+
+def on_ui_settings():
+    import gradio as gr
+    shared.opts.add_option("filter_nsfw", shared.OptionInfo(True, "Filter NSFW", gr.Checkbox, {"interactive": True}, section=('nsfw', "NSFW")))
+
+script_callbacks.on_ui_settings(on_ui_settings)
